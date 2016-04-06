@@ -126,7 +126,7 @@ class Route53ChallengeCompleter(object):
         return self._find_best_hosted_zone(domain, hosted_zones_dictionary)
 
     def _find_best_hosted_zone(self, domain, hosted_zones_dictionary):
-        # Stating from the most deep possible hosted zone and 
+        # Stating from the most deep possible hosted zone and
         # searching for one till the top domain.
         #
         # For the following domain, the search will be done as follows
@@ -148,7 +148,7 @@ class Route53ChallengeCompleter(object):
                 return hosted_zones_dictionary[hosted_zone]
             else:
                 domain = domain[domain.find('.')+1:]
-        
+
         raise ValueError(
             "Unable to find a Route53 hosted zone for {}"
             .format(original_domain)
