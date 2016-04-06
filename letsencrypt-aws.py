@@ -118,18 +118,37 @@ class Route53ChallengeCompleter(object):
 
     def _find_zone_id_for_domain(self, domain):
         paginator = self.route53_client.get_paginator("list_hosted_zones")
+        hosted_zones_dictionary = dict()
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
-                # This assumes that zones are returned sorted by specificity,
-                # meaning in the following order:
-                # ["foo.bar.baz.com", "bar.baz.com", "baz.com", "com"]
-                if (
-                    domain.endswith(zone["Name"]) or
-                    (domain + ".").endswith(zone["Name"])
-                ):
-                    return zone["Id"]
+                hosted_zones_dictionary[zone["Name"]] = zone["Id"]
+
+        return self._find_best_hosted_zone(domain, hosted_zones_dictionary)
+
+    def _find_best_hosted_zone(self, domain, hosted_zones_dictionary):
+        #Stating from the most deep possible hosted zone and searching for one till the top domain.
+        #
+        # For the following domain, the search will be done as follows (in the order provided)
+        # Domain: _acme-challenge.zxc.asd.qwe.company.com
+        #
+        # _acme-challenge.zxc.asd.qwe.company.com.
+        # zxc.asd.qwe.company.com.
+        # asd.qwe.company.com.
+        # qwe.company.com.
+        # company.com.
+        # com.
+
+        original_domain = domain
+        while '.' in domain:
+            #Domains allways end with '.'
+            hosted_zone = domain+'.'
+            if hosted_zone in hosted_zones_dictionary:
+                return hosted_zones_dictionary[hosted_zone]
+            else:
+                domain = domain[domain.find('.')+1:]
+        
         raise ValueError(
-            "Unable to find a Route53 hosted zone for {}".format(domain)
+            "Unable to find a Route53 hosted zone for {}".format(original_domain)
         )
 
     def _change_txt_record(self, action, zone_id, domain, value):
